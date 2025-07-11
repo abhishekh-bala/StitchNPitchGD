@@ -18,7 +18,7 @@ const RandomGuideSelector: React.FC<RandomGuideSelectorProps> = ({
   const [currentSpinGuide, setCurrentSpinGuide] = useState<Guide | null>(null);
 
   // Get winner guide IDs to exclude from selection
-  const winnerGuideIds = new Set(winners.map(winner => winner.guide_id || winner.id));
+  const winnerGuideIds = new Set(winners.map(winner => winner.guide_id));
 
   const selectRandomGuide = () => {
     if (!selectedDepartment) return;

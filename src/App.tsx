@@ -78,7 +78,7 @@ function App() {
       const { data, error } = await supabase
         .from('winners')
         .insert([{
-          guide_id: winner.id || winner.guide_id,
+          guide_id: winner.guide_id,
           name: winner.name,
           department: winner.department,
           supervisor: winner.supervisor,
@@ -203,7 +203,10 @@ function App() {
     if (action === 'pass' && selectedGuide) {
       // Create winner object
       const winner: Winner = {
-        ...selectedGuide,
+        guide_id: selectedGuide.id,
+        name: selectedGuide.name,
+        department: selectedGuide.department,
+        supervisor: selectedGuide.supervisor,
         timestamp: new Date().toISOString()
       };
       

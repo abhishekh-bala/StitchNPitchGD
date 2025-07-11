@@ -8,8 +8,12 @@ export interface Guide {
   supervisor: string;
 }
 
-export interface Winner extends Guide {
+export interface Winner {
   id?: string;
+  guide_id: number;
+  name: string;
+  department: string;
+  supervisor: string;
   timestamp: string;
 }
 

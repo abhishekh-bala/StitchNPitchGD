@@ -208,7 +208,7 @@ const ExportData: React.FC<ExportDataProps> = ({ isOpen, onClose, winners }) => 
             'Supervisor': winner.supervisor,
             'Selected Date': new Date(winner.timestamp).toLocaleDateString(),
             'Selected Time': new Date(winner.timestamp).toLocaleTimeString(),
-            'Guide ID': winner.id || winner.guide_id
+            'Guide ID': winner.guide_id
           }));
           generateCSV(winnersData, `stitch-n-pitch-winners-${new Date().toISOString().split('T')[0]}.csv`);
           break;
@@ -223,7 +223,7 @@ const ExportData: React.FC<ExportDataProps> = ({ isOpen, onClose, winners }) => 
             'Name': guide.name,
             'Department': guide.department,
             'Supervisor': guide.supervisor,
-            'Status': winners.some(w => (w.id || w.guide_id) === guide.id) ? 'Winner' : 'Available'
+            'Status': winners.some(w => w.guide_id === guide.id) ? 'Winner' : 'Available'
           }));
           generateCSV(guidesData, `stitch-n-pitch-guides-${new Date().toISOString().split('T')[0]}.csv`);
           break;
@@ -234,7 +234,7 @@ const ExportData: React.FC<ExportDataProps> = ({ isOpen, onClose, winners }) => 
             'Timestamp': winner.timestamp,
             'Date': new Date(winner.timestamp).toLocaleDateString(),
             'Time': new Date(winner.timestamp).toLocaleTimeString(),
-            'Guide ID': winner.id || winner.guide_id,
+            'Guide ID': winner.guide_id,
             'Guide Name': winner.name,
             'Department': winner.department,
             'Supervisor': winner.supervisor,
