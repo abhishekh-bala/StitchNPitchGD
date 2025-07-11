@@ -478,7 +478,7 @@ const BackupRestore: React.FC<BackupRestoreProps> = ({
                   <button
                     onClick={downloadBackup}
                     disabled={isProcessing}
-                    className={\`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold text-lg transition-all transform hover:scale-105 ${
+                    className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold text-lg transition-all transform hover:scale-105 ${
                       isProcessing
                         ? 'bg-gray-500 cursor-not-allowed processing-pulse'
                         : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg'
@@ -608,7 +608,7 @@ const BackupRestore: React.FC<BackupRestoreProps> = ({
                       <button
                         onClick={initiateRestore}
                         disabled={isProcessing}
-                        className={\`flex items-center gap-3 px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 ${
+                        className={`flex items-center gap-3 px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 ${
                           isProcessing
                             ? 'bg-gray-500 cursor-not-allowed processing-pulse'
                             : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg'
