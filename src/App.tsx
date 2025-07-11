@@ -11,7 +11,7 @@ import ConfettiAnimation from './components/ConfettiAnimation';
 import FailAnimation from './components/FailAnimation';
 import DynamicOrbs from './components/DynamicOrbs';
 import Navigation from './components/Navigation';
-import { Guide, Winner, ADMIN_PASSWORD } from './config/data';
+import { Guide, Winner, Loser, ADMIN_PASSWORD } from './config/data';
 
 type AppTab = 'selection' | 'winners';
 
@@ -20,6 +20,7 @@ function App() {
   const [selectedGuide, setSelectedGuide] = useState<Guide | null>(null);
   const [currentWinner, setCurrentWinner] = useState<Winner | null>(null);
   const [winners, setWinners] = useState<Winner[]>([]);
+  const [losers, setLosers] = useState<Loser[]>([]);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showFailAnimation, setShowFailAnimation] = useState(false);
@@ -34,6 +35,7 @@ function App() {
   // Load winners from Supabase on component mount
   useEffect(() => {
     loadWinners();
+    loadLosers();
   }, []);
 
   const loadWinners = async () => {
@@ -73,6 +75,37 @@ function App() {
     }
   };
 
+  const loadLosers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('losers')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error loading losers:', error);
+        // Fallback to localStorage if Supabase fails
+        const savedLosers = localStorage.getItem('stitchAndPitchLosers');
+        if (savedLosers) {
+          const localLosers = JSON.parse(savedLosers);
+          localLosers.sort((a: Loser, b: Loser) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+          setLosers(localLosers);
+        }
+      } else {
+        setLosers(data || []);
+        localStorage.setItem('stitchAndPitchLosers', JSON.stringify(data || []));
+      }
+    } catch (error) {
+      console.error('Error connecting to database:', error);
+      const savedLosers = localStorage.getItem('stitchAndPitchLosers');
+      if (savedLosers) {
+        const localLosers = JSON.parse(savedLosers);
+        localLosers.sort((a: Loser, b: Loser) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        setLosers(localLosers);
+      }
+    }
+  };
+
   const saveWinnerToDatabase = async (winner: Winner) => {
     try {
       const { data, error } = await supabase
@@ -82,7 +115,8 @@ function App() {
           name: winner.name,
           department: winner.department,
           supervisor: winner.supervisor,
-          timestamp: winner.timestamp
+          timestamp: winner.timestamp,
+          chat_ids: winner.chat_ids || []
         }])
         .select()
         .single();
@@ -103,6 +137,40 @@ function App() {
       const updatedWinners = [...winners, winner].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
       setWinners(updatedWinners);
       localStorage.setItem('stitchAndPitchWinners', JSON.stringify(updatedWinners));
+    }
+  };
+
+  const saveLoserToDatabase = async (loser: Loser) => {
+    try {
+      const { data, error } = await supabase
+        .from('losers')
+        .insert([{
+          guide_id: loser.guide_id,
+          name: loser.name,
+          department: loser.department,
+          supervisor: loser.supervisor,
+          timestamp: loser.timestamp,
+          chat_ids: loser.chat_ids || []
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error saving loser to database:', error);
+        // Fallback to localStorage
+        const updatedLosers = [...losers, loser].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        setLosers(updatedLosers);
+        localStorage.setItem('stitchAndPitchLosers', JSON.stringify(updatedLosers));
+      } else {
+        // Reload losers from database to get the latest data
+        await loadLosers();
+      }
+    } catch (error) {
+      console.error('Error connecting to database:', error);
+      // Fallback to localStorage
+      const updatedLosers = [...losers, loser].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      setLosers(updatedLosers);
+      localStorage.setItem('stitchAndPitchLosers', JSON.stringify(updatedLosers));
     }
   };
 
@@ -159,36 +227,88 @@ function App() {
 
       // Successfully purged from database
       setWinners([]);
+      setLosers([]);
       localStorage.removeItem('stitchAndPitchWinners');
+      localStorage.removeItem('stitchAndPitchLosers');
       
       // Reload to confirm the purge worked
       await loadWinners();
+      await loadLosers();
       
     } catch (error) {
       console.error('Error connecting to database during purge:', error);
       // Fallback to localStorage
       setWinners([]);
+      setLosers([]);
       localStorage.removeItem('stitchAndPitchWinners');
+      localStorage.removeItem('stitchAndPitchLosers');
     }
   };
 
-  const handleRestoreWinners = async (restoredWinners: Winner[]) => {
+  const purgeAllLosers = async () => {
+    try {
+      const { error } = await supabase
+        .from('losers')
+        .delete()
+        .gte('created_at', '1900-01-01');
+
+      if (error) {
+        console.error('Error purging losers from database:', error);
+        const { error: altError } = await supabase
+          .from('losers')
+          .delete()
+          .not('id', 'is', null);
+        
+        if (altError) {
+          console.error('Alternative purge method also failed:', altError);
+          setLosers([]);
+          localStorage.removeItem('stitchAndPitchLosers');
+          return;
+        }
+      }
+
+      setLosers([]);
+      localStorage.removeItem('stitchAndPitchLosers');
+      await loadLosers();
+      
+    } catch (error) {
+      console.error('Error connecting to database during purge:', error);
+      setLosers([]);
+      localStorage.removeItem('stitchAndPitchLosers');
+    }
+  };
+
+  const handleRestoreWinners = async (restoredWinners: Winner[], restoredLosers?: Loser[]) => {
     try {
       // First, purge existing data
       await purgeAllWinners();
+      if (restoredLosers) {
+        await purgeAllLosers();
+      }
       
       // Then insert restored data
       for (const winner of restoredWinners) {
         await saveWinnerToDatabase(winner);
       }
       
+      if (restoredLosers) {
+        for (const loser of restoredLosers) {
+          await saveLoserToDatabase(loser);
+        }
+      }
+      
       // Reload to get fresh data
       await loadWinners();
+      await loadLosers();
     } catch (error) {
       console.error('Error restoring winners:', error);
       // Fallback to localStorage
       setWinners(restoredWinners);
       localStorage.setItem('stitchAndPitchWinners', JSON.stringify(restoredWinners));
+      if (restoredLosers) {
+        setLosers(restoredLosers);
+        localStorage.setItem('stitchAndPitchLosers', JSON.stringify(restoredLosers));
+      }
     }
   };
 
@@ -197,7 +317,7 @@ function App() {
     setIsPasswordModalOpen(true);
   };
 
-  const handlePasswordConfirm = async (action: 'pass' | 'fail') => {
+  const handlePasswordConfirm = async (action: 'pass' | 'fail', chatIds: string[]) => {
     setIsPasswordModalOpen(false);
     
     if (action === 'pass' && selectedGuide) {
@@ -207,7 +327,8 @@ function App() {
         name: selectedGuide.name,
         department: selectedGuide.department,
         supervisor: selectedGuide.supervisor,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        chat_ids: chatIds
       };
       
       // Save to database
@@ -217,6 +338,19 @@ function App() {
       
       // Winner display and confetti will stay until manually closed
     } else if (action === 'fail' && selectedGuide) {
+      // Create loser object
+      const loser: Loser = {
+        guide_id: selectedGuide.id,
+        name: selectedGuide.name,
+        department: selectedGuide.department,
+        supervisor: selectedGuide.supervisor,
+        timestamp: new Date().toISOString(),
+        chat_ids: chatIds
+      };
+      
+      // Save loser to database
+      await saveLoserToDatabase(loser);
+      
       // Show fail animation
       setFailedGuideName(selectedGuide.name);
       setShowFailAnimation(true);
@@ -311,10 +445,10 @@ function App() {
           setIsPasswordModalOpen(false);
           setSelectedGuide(null);
         }}
-        onConfirm={(action) => {
+        onConfirm={(action, chatIds) => {
           const passwordInput = document.querySelector('input[type="password"]') as HTMLInputElement;
           if (passwordInput && validatePassword(passwordInput.value)) {
-            handlePasswordConfirm(action);
+            handlePasswordConfirm(action, chatIds);
           } else {
             alert('Invalid password. Access denied.');
           }
@@ -333,12 +467,14 @@ function App() {
         isOpen={isExportDataOpen}
         onClose={() => setIsExportDataOpen(false)}
         winners={winners}
+        losers={losers}
       />
 
       <BackupRestore
         isOpen={isBackupRestoreOpen}
         onClose={() => setIsBackupRestoreOpen(false)}
         winners={winners}
+        losers={losers}
         onRestoreWinners={handleRestoreWinners}
       />
 
