@@ -1,20 +1,23 @@
 import React, { useState, useRef } from 'react';
 import { Download, Upload, RotateCcw, Save, X, CheckCircle, AlertTriangle, Database, Clock, Lock } from 'lucide-react';
-import { Winner, ADMIN_PASSWORD } from '../config/data';
+import { Winner, Loser, ADMIN_PASSWORD } from '../config/data';
 
 interface BackupRestoreProps {
   isOpen: boolean;
   onClose: () => void;
   winners: Winner[];
-  onRestoreWinners: (winners: Winner[]) => void;
+  losers: Loser[];
+  onRestoreWinners: (winners: Winner[], losers?: Loser[]) => void;
 }
 
 interface BackupData {
   version: string;
   timestamp: string;
   totalWinners: number;
+  totalLosers: number;
   departments: string[];
   winners: Winner[];
+  losers: Loser[];
   metadata: {
     exportedBy: string;
     applicationVersion: string;
@@ -26,6 +29,7 @@ const BackupRestore: React.FC<BackupRestoreProps> = ({
   isOpen, 
   onClose, 
   winners, 
+  losers,
   onRestoreWinners 
 }) => {
   const [activeTab, setActiveTab] = useState<'backup' | 'restore'>('backup');
@@ -75,12 +79,14 @@ const BackupRestore: React.FC<BackupRestoreProps> = ({
       version: '1.0',
       timestamp: new Date().toISOString(),
       totalWinners: winners.length,
-      departments: [...new Set(winners.map(w => w.department))],
+      totalLosers: losers.length,
+      departments: [...new Set([...winners.map(w => w.department), ...losers.map(l => l.department)])],
       winners: winners,
+      losers: losers,
       metadata: {
         exportedBy: 'Stitch n Pitch Contest System',
         applicationVersion: '1.0.0',
-        databaseSchema: 'winners_v1'
+        databaseSchema: 'winners_losers_v2'
       }
     };
 
@@ -180,12 +186,17 @@ const BackupRestore: React.FC<BackupRestoreProps> = ({
       const validWinners = restorePreview.winners.filter(winner => 
         winner.name && winner.department && winner.supervisor && winner.timestamp
       );
+      
+      const validLosers = restorePreview.losers ? restorePreview.losers.filter(loser => 
+        loser.name && loser.department && loser.supervisor && loser.timestamp
+      ) : [];
 
-      if (validWinners.length !== restorePreview.winners.length) {
+      if (validWinners.length !== restorePreview.winners.length || 
+          (restorePreview.losers && validLosers.length !== restorePreview.losers.length)) {
         console.warn('Some invalid winner records were filtered out');
       }
 
-      onRestoreWinners(validWinners);
+      onRestoreWinners(validWinners, validLosers.length > 0 ? validLosers : undefined);
       setProcessSuccess(true);
       
       setTimeout(() => {
@@ -289,8 +300,8 @@ const BackupRestore: React.FC<BackupRestoreProps> = ({
             <div className="mb-6">
               <p className="text-white text-opacity-90 mb-4">
                 Enter admin password to {pendingAction === 'backup' ? 'create backup' : 'restore data'}.
-              </p>
-              
+                  <p className="text-green-100 text-xs md:text-sm font-medium">Total Losers</p>
+                  <div className="text-xl md:text-3xl font-bold">{losers.length}</div>
               <form onSubmit={handlePasswordSubmit}>
                 <label htmlFor="backup-password" className="block text-sm font-medium text-white text-opacity-90 mb-2">
                   Admin Password
@@ -364,9 +375,8 @@ const BackupRestore: React.FC<BackupRestoreProps> = ({
           <div className="flex justify-center mb-8">
             <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-2xl p-2 flex gap-2">
               <button
-                onClick={() => setActiveTab('backup')}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all ${
-                  activeTab === 'backup'
+                  <p className="text-orange-100 text-xs md:text-sm font-medium">Departments</p>
+                  <div className="text-xl md:text-3xl font-bold">{[...new Set([...winners.map(w => w.department), ...losers.map(l => l.department)])].length}</div>
                     ? 'bg-blue-600 text-white shadow-lg'
                     : 'text-blue-200 hover:text-white hover:bg-white hover:bg-opacity-10'
                 }`}
@@ -375,13 +385,8 @@ const BackupRestore: React.FC<BackupRestoreProps> = ({
                 Create Backup
               </button>
               <button
-                onClick={() => setActiveTab('restore')}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all ${
-                  activeTab === 'restore'
-                    ? 'bg-green-600 text-white shadow-lg'
-                    : 'text-blue-200 hover:text-white hover:bg-white hover:bg-opacity-10'
-                }`}
-              >
+                  <p className="text-purple-100 text-xs md:text-sm font-medium">Total Entries</p>
+                  <div className="text-xl md:text-3xl font-bold">{winners.length + losers.length}</div>
                 <Upload className="w-5 h-5" />
                 Restore Data
               </button>
@@ -427,27 +432,31 @@ const BackupRestore: React.FC<BackupRestoreProps> = ({
                       <CheckCircle className="w-5 h-5 text-green-400" />
                       <span>Complete winner records</span>
                     </div>
+                    <div className="flex items-center gap-2 md:gap-3">
+                      <CheckCircle className="w-5 h-5 text-green-400" />
+                      <span>Complete loser records</span>
+                    </div>
                     <div className="flex items-center gap-2">
                       <CheckCircle className="w-5 h-5 text-green-400" />
                       <span>Timestamps and metadata</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <CheckCircle className="w-5 h-5 text-green-400" />
-                      <span>Department information</span>
+                      <span>Chat IDs for all entries</span>
                     </div>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <CheckCircle className="w-5 h-5 text-green-400" />
+                      <span>Department information</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-400" />
                       <span>Supervisor details</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-green-400" />
+                        This will replace all current winner and loser data. Make sure to create a backup first if needed.
                       <span>Version information</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-green-400" />
-                      <span>Backup validation data</span>
                     </div>
                   </div>
                 </div>
@@ -522,6 +531,10 @@ const BackupRestore: React.FC<BackupRestoreProps> = ({
 
               {/* Restore Preview */}
               {restorePreview && (
+                    <div className="flex justify-between text-blue-200">
+                      <span>Total Losers:</span>
+                      <span className="text-white font-medium">{restorePreview.totalLosers || 0}</span>
+                    </div>
                 <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-2xl p-6">
                   <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
                     <Clock className="w-6 h-6" />
@@ -597,8 +610,8 @@ const BackupRestore: React.FC<BackupRestoreProps> = ({
                         className={`flex items-center gap-3 px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 ${
                           isProcessing
                             ? 'bg-gray-500 cursor-not-allowed processing-pulse'
-                            : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-lg'
-                        } text-white`}
+                      <span>Current Entries:</span>
+                      <span className="text-white font-medium">{winners.length + losers.length}</span>
                       >
                         <Upload className={`w-5 h-5 ${isProcessing ? 'animate-bounce' : ''}`} />
                         {isProcessing ? 'Restoring...' : 'Restore Data'}

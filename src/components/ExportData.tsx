@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { Download, FileText, FileSpreadsheet, Calendar, Users, Trophy, X, CheckCircle, Lock } from 'lucide-react';
-import { Winner, GUIDES, ADMIN_PASSWORD } from '../config/data';
+import { Winner, Loser, GUIDES, ADMIN_PASSWORD } from '../config/data';
 import jsPDF from 'jspdf';
 
 interface ExportDataProps {
   isOpen: boolean;
   onClose: () => void;
   winners: Winner[];
+  losers: Loser[];
 }
 
-type ExportType = 'winners-csv' | 'winners-pdf' | 'guides-csv' | 'entry-logs-csv';
+type ExportType = 'winners-csv' | 'winners-pdf' | 'guides-csv' | 'entry-logs-csv' | 'complete-data-csv';
 
 const ExportData: React.FC<ExportDataProps> = ({ isOpen, onClose, winners }) => {
   const [selectedExport, setSelectedExport] = useState<ExportType>('winners-csv');
@@ -49,6 +50,13 @@ const ExportData: React.FC<ExportDataProps> = ({ isOpen, onClose, winners }) => 
       description: 'Detailed logs with timestamps and departments',
       icon: Calendar,
       color: 'from-purple-500 to-indigo-600'
+    },
+    {
+      id: 'complete-data-csv' as ExportType,
+      title: 'Complete Data (CSV)',
+      description: 'All winners and losers with chat IDs',
+      icon: Trophy,
+      color: 'from-orange-500 to-yellow-600'
     }
   ];
 
@@ -241,6 +249,42 @@ const ExportData: React.FC<ExportDataProps> = ({ isOpen, onClose, winners }) => 
             'Day of Week': new Date(winner.timestamp).toLocaleDateString('en-US', { weekday: 'long' })
           }));
           generateCSV(logsData, `stitch-n-pitch-entry-logs-${new Date().toISOString().split('T')[0]}.csv`);
+          break;
+          
+        case 'complete-data-csv':
+          const completeData = [
+            ...winners.map(winner => ({
+              'Type': 'Winner',
+              'Entry #': winners.indexOf(winner) + 1,
+              'Name': winner.name,
+              'Department': winner.department,
+              'Supervisor': winner.supervisor,
+              'Selected Date': new Date(winner.timestamp).toLocaleDateString(),
+              'Selected Time': new Date(winner.timestamp).toLocaleTimeString(),
+              'Guide ID': winner.guide_id,
+              'Chat ID 1': winner.chat_ids?.[0] || '',
+              'Chat ID 2': winner.chat_ids?.[1] || '',
+              'Chat ID 3': winner.chat_ids?.[2] || '',
+              'Chat ID 4': winner.chat_ids?.[3] || '',
+              'Chat ID 5': winner.chat_ids?.[4] || ''
+            })),
+            ...losers.map(loser => ({
+              'Type': 'Loser',
+              'Entry #': losers.indexOf(loser) + 1,
+              'Name': loser.name,
+              'Department': loser.department,
+              'Supervisor': loser.supervisor,
+              'Selected Date': new Date(loser.timestamp).toLocaleDateString(),
+              'Selected Time': new Date(loser.timestamp).toLocaleTimeString(),
+              'Guide ID': loser.guide_id,
+              'Chat ID 1': loser.chat_ids?.[0] || '',
+              'Chat ID 2': loser.chat_ids?.[1] || '',
+              'Chat ID 3': loser.chat_ids?.[2] || '',
+              'Chat ID 4': loser.chat_ids?.[3] || '',
+              'Chat ID 5': loser.chat_ids?.[4] || ''
+            }))
+          ];
+          generateCSV(completeData, `stitch-n-pitch-complete-data-${new Date().toISOString().split('T')[0]}.csv`);
           break;
       }
       
@@ -463,6 +507,12 @@ const ExportData: React.FC<ExportDataProps> = ({ isOpen, onClose, winners }) => 
                 <div>
                   <p className="mb-2">📅 <strong>{winners.length}</strong> entry logs will be exported</p>
                   <p className="text-sm">Includes: Detailed timestamps, guide info, day of week analysis</p>
+                </div>
+              )}
+              {selectedExport === 'complete-data-csv' && (
+                <div>
+                  <p className="mb-2">🎯 <strong>{winners.length + losers.length}</strong> total entries will be exported</p>
+                  <p className="text-sm">Includes: All winners and losers with chat IDs, complete contest data</p>
                 </div>
               )}
             </div>

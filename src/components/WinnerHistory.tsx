@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trophy, Calendar, User, Building, UserCheck, Trash2, AlertTriangle, X, Filter, Users, Star } from 'lucide-react';
+import { Trophy, Calendar, User, Building, UserCheck, Trash2, AlertTriangle, X, Filter, Users, Star, MessageCircle, Eye, EyeOff } from 'lucide-react';
 import { Winner, PURGE_PASSWORD, ADMIN_PASSWORD, DEPARTMENTS } from '../config/data';
 
 interface WinnerHistoryProps {
@@ -190,6 +190,7 @@ const DeleteModal: React.FC<DeleteModalProps> = ({ isOpen, onClose, onConfirm, w
 const WinnerHistory: React.FC<WinnerHistoryProps> = ({ winners, onPurgeWinners, onDeleteWinner }) => {
   const [isPurgeModalOpen, setIsPurgeModalOpen] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState<string>('All');
+  const [expandedWinner, setExpandedWinner] = useState<string | null>(null);
   const [deleteModalState, setDeleteModalState] = useState<{
     isOpen: boolean;
     winnerId: string | null;
@@ -230,6 +231,10 @@ const WinnerHistory: React.FC<WinnerHistoryProps> = ({ winners, onPurgeWinners, 
       winnerId: null,
       winnerName: ''
     });
+  };
+
+  const toggleWinnerExpansion = (winnerId: string) => {
+    setExpandedWinner(expandedWinner === winnerId ? null : winnerId);
   };
 
   // Filter winners based on selected department
@@ -423,6 +428,15 @@ const WinnerHistory: React.FC<WinnerHistoryProps> = ({ winners, onPurgeWinners, 
                   </div>
                   <div className="flex items-center gap-2">
                     <Trophy className="w-8 h-8 text-yellow-400" />
+                    {winner.chat_ids && winner.chat_ids.length > 0 && (
+                      <button
+                        onClick={() => toggleWinnerExpansion(winner.id || '')}
+                        className="p-2 bg-blue-500 bg-opacity-20 text-blue-300 rounded-lg hover:bg-blue-500 hover:text-white transition-all"
+                        title="View Chat IDs"
+                      >
+                        {expandedWinner === winner.id ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    )}
                     {onDeleteWinner && (
                       <button
                         onClick={() => handleDeleteClick(winner)}
@@ -452,6 +466,24 @@ const WinnerHistory: React.FC<WinnerHistoryProps> = ({ winners, onPurgeWinners, 
                     </div>
                   </div>
                 </div>
+
+                {/* Chat IDs Section */}
+                {expandedWinner === winner.id && winner.chat_ids && winner.chat_ids.length > 0 && (
+                  <div className="mt-4 bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur-sm">
+                    <div className="flex items-center gap-2 mb-3">
+                      <MessageCircle className="w-5 h-5 text-blue-300" />
+                      <h4 className="font-medium text-blue-200">Chat IDs</h4>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {winner.chat_ids.map((chatId, chatIndex) => (
+                        <div key={chatIndex} className="bg-white bg-opacity-10 rounded-lg p-3">
+                          <div className="text-xs text-blue-200 mb-1">Chat ID {chatIndex + 1}</div>
+                          <div className="text-white font-mono text-sm">{chatId}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
