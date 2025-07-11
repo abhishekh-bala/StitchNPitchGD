@@ -484,7 +484,7 @@ const BackupRestore: React.FC<BackupRestoreProps> = ({
                         : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg'
                     } text-white mx-auto`}
                   >
-                    <Download className={\`w-6 h-6 ${isProcessing ? 'animate-bounce' : ''}`} />
+                    <Download className={"w-6 h-6 " + (isProcessing ? 'animate-bounce' : '')} />
                     {isProcessing ? 'Creating Backup...' : 'Download Backup File'}
                   </button>
                 )}
