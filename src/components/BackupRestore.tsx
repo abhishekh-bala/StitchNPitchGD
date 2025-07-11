@@ -300,8 +300,7 @@ const BackupRestore: React.FC<BackupRestoreProps> = ({
             <div className="mb-6">
               <p className="text-white text-opacity-90 mb-4">
                 Enter admin password to {pendingAction === 'backup' ? 'create backup' : 'restore data'}.
-                  <p className="text-green-100 text-xs md:text-sm font-medium">Total Losers</p>
-                  <div className="text-xl md:text-3xl font-bold">{losers.length}</div>
+              </p>
               <form onSubmit={handlePasswordSubmit}>
                 <label htmlFor="backup-password" className="block text-sm font-medium text-white text-opacity-90 mb-2">
                   Admin Password
@@ -375,8 +374,9 @@ const BackupRestore: React.FC<BackupRestoreProps> = ({
           <div className="flex justify-center mb-8">
             <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-2xl p-2 flex gap-2">
               <button
-                  <p className="text-orange-100 text-xs md:text-sm font-medium">Departments</p>
-                  <div className="text-xl md:text-3xl font-bold">{[...new Set([...winners.map(w => w.department), ...losers.map(l => l.department)])].length}</div>
+                onClick={() => setActiveTab('backup')}
+                className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-colors ${
+                  activeTab === 'backup'
                     ? 'bg-blue-600 text-white shadow-lg'
                     : 'text-blue-200 hover:text-white hover:bg-white hover:bg-opacity-10'
                 }`}
@@ -385,8 +385,13 @@ const BackupRestore: React.FC<BackupRestoreProps> = ({
                 Create Backup
               </button>
               <button
-                  <p className="text-purple-100 text-xs md:text-sm font-medium">Total Entries</p>
-                  <div className="text-xl md:text-3xl font-bold">{winners.length + losers.length}</div>
+                onClick={() => setActiveTab('restore')}
+                className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-colors ${
+                  activeTab === 'restore'
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'text-blue-200 hover:text-white hover:bg-white hover:bg-opacity-10'
+                }`}
+              >
                 <Upload className="w-5 h-5" />
                 Restore Data
               </button>
@@ -455,7 +460,7 @@ const BackupRestore: React.FC<BackupRestoreProps> = ({
                       <span>Supervisor details</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        This will replace all current winner and loser data. Make sure to create a backup first if needed.
+                      <CheckCircle className="w-5 h-5 text-green-400" />
                       <span>Version information</span>
                     </div>
                   </div>
@@ -473,13 +478,13 @@ const BackupRestore: React.FC<BackupRestoreProps> = ({
                   <button
                     onClick={downloadBackup}
                     disabled={isProcessing}
-                    className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold text-lg transition-all transform hover:scale-105 ${
+                    className={\`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold text-lg transition-all transform hover:scale-105 ${
                       isProcessing
                         ? 'bg-gray-500 cursor-not-allowed processing-pulse'
                         : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg'
                     } text-white mx-auto`}
                   >
-                    <Download className={`w-6 h-6 ${isProcessing ? 'animate-bounce' : ''}`} />
+                    <Download className={\`w-6 h-6 ${isProcessing ? 'animate-bounce' : ''}`} />
                     {isProcessing ? 'Creating Backup...' : 'Download Backup File'}
                   </button>
                 )}
@@ -531,10 +536,6 @@ const BackupRestore: React.FC<BackupRestoreProps> = ({
 
               {/* Restore Preview */}
               {restorePreview && (
-                    <div className="flex justify-between text-blue-200">
-                      <span>Total Losers:</span>
-                      <span className="text-white font-medium">{restorePreview.totalLosers || 0}</span>
-                    </div>
                 <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-2xl p-6">
                   <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
                     <Clock className="w-6 h-6" />
@@ -607,11 +608,11 @@ const BackupRestore: React.FC<BackupRestoreProps> = ({
                       <button
                         onClick={initiateRestore}
                         disabled={isProcessing}
-                        className={`flex items-center gap-3 px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 ${
+                        className={\`flex items-center gap-3 px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 ${
                           isProcessing
                             ? 'bg-gray-500 cursor-not-allowed processing-pulse'
-                      <span>Current Entries:</span>
-                      <span className="text-white font-medium">{winners.length + losers.length}</span>
+                            : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg'
+                        } text-white`}
                       >
                         <Upload className={`w-5 h-5 ${isProcessing ? 'animate-bounce' : ''}`} />
                         {isProcessing ? 'Restoring...' : 'Restore Data'}
